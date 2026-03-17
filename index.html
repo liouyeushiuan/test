@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正念練習課程</title>
+    <style>
+        body { background: #fdfdfd; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .container { text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); width: 85%; max-width: 450px; }
+        .audio-item { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px dashed #eee; }
+        .audio-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        h3 { color: #333; margin-bottom: 15px; font-weight: 500; font-size: 1.1em; }
+        audio { width: 100%; }
+        .hint { color: #888; font-size: 0.85em; line-height: 1.6; margin-top: 25px; background: #f9f9f9; padding: 10px; border-radius: 10px; }
+        .label { display: inline-block; background: #eef2f7; color: #5a7d9a; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; margin-bottom: 8px; }
+        strong { color: #d9534f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="audio-item">
+            <span class="label">Body Scan 身體掃描</span>
+            <h3>EN</h3>
+            <audio id="player1" src="audio1.mp3" controls></audio>
+        </div>
+
+        <div class="audio-item">
+            <h3>中文</h3>
+            <audio id="player2" src="audio2.mp3" controls></audio>
+        </div>
+
+       
+    </div>
+
+    <script>
+    var api = null;
+    var initialized = false;
+    var totalPlayedSeconds = 0;
+    var currentStart = null;
+
+    // 強力搜尋 API
+    function findAPI(win) {
+        var n = 0;
+        while ((win.API == null) && (win.parent != null) && (win.parent != win) && (n < 500)) {
+            n++;
+            win = win.parent;
+        }
+        return win.API;
+    }
+
+    function init() {
+        api = findAPI(window);
+        if (!api && window.opener) {
+            api = findAPI(window.opener);
+        }
+
+        if (api) {
+            var res = api.LMSInitialize("");
+            if (res === "true") {
+                initialized = true;
+                // 強制初始化狀態
+                api.LMSSetValue("cmi.core.lesson_status", "incomplete");
+                api.LMSCommit("");
+                console.log("SCORM API 初始化成功");
+            }
+        } else {
+            console.log("找不到 SCORM API");
+        }
+    }
+
+    // 計時邏輯
+    var players = document.querySelectorAll('.player');
+    players.forEach(function(p) {
+        p.onplay = function() { if (currentStart === null) currentStart = new Date(); };
+        p.onpause = p.onended = function() {
+            if (currentStart !== null) {
+                totalPlayedSeconds += Math.floor((new Date() - currentStart) / 1000);
+                currentStart = null;
+                saveToLMS();
+            }
+        };
+    });
+
+    function saveToLMS() {
+        if (api && initialized) {
+            var sessionSeconds = totalPlayedSeconds;
+            if (currentStart !== null) {
+                sessionSeconds += Math.floor((new Date() - currentStart) / 1000);
+            }
+            if (sessionSeconds > 0) {
+                var h = Math.floor(sessionSeconds / 3600);
+                var m = Math.floor((sessionSeconds % 3600) / 60);
+                var s = Math.floor(sessionSeconds % 60);
+                var timeStr = (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+                
+                // 同時回報兩個關鍵欄位
+                api.LMSSetValue("cmi.core.session_time", timeStr);
+                api.LMSSetValue("cmi.core.lesson_status", "completed");
+                api.LMSCommit("");
+            }
+        }
+    }
+
+    // 每 10 秒存檔一次，確保萬無一失
+    setInterval(saveToLMS, 10000);
+
+    window.onbeforeunload = function() {
+        if (api && initialized) {
+            saveToLMS();
+            api.LMSFinish("");
+        }
+    };
+
+    window.onload = init;
+</script>
+</body>
+</html>
