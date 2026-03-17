@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在開啟 Canvas 作業...</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f5; color: #333; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; max-width: 80%; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #E00122; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #E00122; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="loader"></div>
+    <p>正在為您開啟 Canvas App...</p>
+    <p style="font-size: 0.8em; color: #666;">如果沒有反應，請點擊下方按鈕</p>
+    <a id="web-link" href="#" class="btn">開啟網頁版</a>
+</div>
+
+<script>
+    // ======= 只需要改這裡 =======
+    var CONFIG = {
+        appUrl: "canvas-courses://canvas.instructure.com/courses/13418337/pages/week-2-practice?module_item_id=145667169",
+        webUrl: "https://canvas.instructure.com/courses/13418337/pages/week-2-practice?module_item_id=145667169"
+    };
+    // ===========================
+
+    document.getElementById('web-link').href = CONFIG.webUrl;
+
+    // 1. 嘗試喚醒 App
+    window.location.href = CONFIG.appUrl;
+
+    // 2. 智慧跳轉邏輯
+    // 如果使用者在 2.5 秒後還停留在這個網頁，自動轉向網頁版
+    setTimeout(function() {
+        if (!document.hidden) {
+            window.location.href = CONFIG.webUrl;
+        }
+    }, 2500);
+
+    // 處理 LINE 內建瀏覽器攔截問題
+    if (navigator.userAgent.indexOf('Line') > -1) {
+        alert("偵測到您正在使用 LINE，若無法跳轉，請點擊右上角「...」並選擇「以預設瀏覽器開啟」");
+    }
+</script>
+</body>
+</html>
